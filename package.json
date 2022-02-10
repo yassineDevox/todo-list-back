@@ -1,0 +1,26 @@
+{
+  "name": "node-project",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000t\u0000o\u0000d\u0000o\u0000-\u0000l\u0000i\u0000s\u0000t\u0000-\u0000b\u0000a\u0000c\u0000k\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yassineDevox/todo-list-back.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mysql": "^2.18.1"
+  },
+  "bugs": {
+    "url": "https://github.com/yassineDevox/todo-list-back/issues"
+  },
+  "homepage": "https://github.com/yassineDevox/todo-list-back#readme"
+}
