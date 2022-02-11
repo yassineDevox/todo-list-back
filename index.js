@@ -30,7 +30,8 @@ app.listen('9000', () => {
     console.log('Server started on port 9000 😇');
 })
 
-//ecouter les requetes http 
+//--------------ecouter les requetes http--------- 
+//create todo table
 app.get("/create-todo-table", (requestHTTP, responseHTTP) => {
 
     const onCreateTodoTableQuery = (err, QueryResult) => {
@@ -41,7 +42,7 @@ app.get("/create-todo-table", (requestHTTP, responseHTTP) => {
             console.log(QueryResult);
         }
     }
-    
+
     db.query(
         `CREATE TABLE todos 
                 ( 
@@ -56,11 +57,9 @@ app.get("/create-todo-table", (requestHTTP, responseHTTP) => {
                     FOREIGN KEY (userId) REFERENCES users(id)
                 )
 
-        `,onCreateTodoTableQuery)
+        `, onCreateTodoTableQuery)
 })
-
-
-//ecouter les requetes http 
+//create user table
 app.get("/create-user-table", (requestHTTP, responseHTTP) => {
 
     const onCreateUserTableQuery = (err, QueryResult) => {
@@ -84,5 +83,13 @@ app.get("/create-user-table", (requestHTTP, responseHTTP) => {
                     PRIMARY KEY (id), UNIQUE email (email) 
                 ) 
         `, onCreateUserTableQuery)
+})
+
+//create user req (register)
+app.post("/api/register", (requestHTTP, responseHTTP) =>{
+    
+    //fetch data from the api 
+    console.log(requestHTTP.body) 
+    responseHTTP.json(requestHTTP.body)
 })
 
