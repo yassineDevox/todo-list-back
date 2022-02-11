@@ -84,25 +84,46 @@ app.get("/create-user-table", (requestHTTP, responseHTTP) => {
                     PRIMARY KEY (id), UNIQUE email (email) 
                 ) 
         `, onCreateUserTableQuery)
+
 })
 
+
+
+
 //create user req (register)
-app.post("/api/register", (requestHTTP, responseHTTP) =>{
+app.post("/api/register", (requestHTTP, responseHTTP) => {
 
-    const onInsertUserQuery = (err, QueryResult) => {
-
-        if (err) throw err
-        else {
-            responseHTTP.send({msg:"User Account created 😃 Please Verify your email 🚨 !"})
-            console.log(QueryResult);
-        }
-    }
-    
     //fetch data from the api 
-    let newUser  = {...requestHTTP.body}
-    // console.log(requestHTTP.body) 
-    // responseHTTP.json(requestHTTP.body)
-    db.query(`INSERT INTO users SET ?`, newUser,onInsertUserQuery)
+    let newUser = { ...requestHTTP.body }
+    //verify if user exists or not 
+    db.query(
+        `SELECT * FROM users WHERE email='${newUser.email}'`,
+        (err, QR_SELECT) => {
+            if (err) throw err
+            else {
+                if (QR_SELECT.length > 0) {
+                    responseHTTP.statusCode=403
+                    responseHTTP.send({ msg: " Account already exist 🚨 !!" })
+                    return
+                }
+
+                else {
+                    //insert user
+                    db.query(`INSERT INTO users SET ?`, newUser,
+                        (err, QR_INSERT) => {
+                            if (err) throw err
+                            else {
+                                responseHTTP.send({
+                                    msg: "User Account created 😃 Please Verify your email 🚨 !",
+                                    user: QR_INSERT
+                                })
+                            }
+                        })
+                }
+            }
+        }
+    )
+
 
 
 })
