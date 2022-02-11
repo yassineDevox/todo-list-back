@@ -79,6 +79,7 @@ app.get("/create-user-table", (requestHTTP, responseHTTP) => {
                     lastname VARCHAR(60) NOT NULL , 
                     avatarURL VARCHAR(60) NOT NULL , 
                     email VARCHAR(60) NOT NULL,
+                    password VARCHAR(225) NOT NULL,
                     role ENUM('DEV','LEADER','MANAGER') NOT NULL DEFAULT 'DEV' , 
                     PRIMARY KEY (id), UNIQUE email (email) 
                 ) 
@@ -87,9 +88,22 @@ app.get("/create-user-table", (requestHTTP, responseHTTP) => {
 
 //create user req (register)
 app.post("/api/register", (requestHTTP, responseHTTP) =>{
+
+    const onInsertUserQuery = (err, QueryResult) => {
+
+        if (err) throw err
+        else {
+            responseHTTP.send({msg:"User Account created 😃 Please Verify your email 🚨 !"})
+            console.log(QueryResult);
+        }
+    }
     
     //fetch data from the api 
-    console.log(requestHTTP.body) 
-    responseHTTP.json(requestHTTP.body)
+    let newUser  = {...requestHTTP.body}
+    // console.log(requestHTTP.body) 
+    // responseHTTP.json(requestHTTP.body)
+    db.query(`INSERT INTO users SET ?`, newUser,onInsertUserQuery)
+
+
 })
 
