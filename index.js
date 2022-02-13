@@ -83,6 +83,8 @@ app.get("/create-user-table", (requestHTTP, responseHTTP) => {
                     email VARCHAR(60) NOT NULL,
                     password VARCHAR(225) NOT NULL,
                     role ENUM('DEV','LEADER','MANAGER') NOT NULL DEFAULT 'DEV' , 
+                    is_account_verified TINYINT(1) NOT NULL DEFAULT 0,
+                    verify_token VARCHAR(225) NOT NULL ,
                     PRIMARY KEY (id), UNIQUE email (email) 
                 ) 
         `, onCreateUserTableQuery)
@@ -115,7 +117,7 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
                     //crypt the password of the user using bycrypt
                     bcrypt.hash(newUser.password, 10)
                         .then((hashedPassword) => {
-                            
+
                             // password crypted 
                             newUser.password = hashedPassword
 
@@ -124,10 +126,13 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
                                 (err, QR_INSERT) => {
                                     if (err) throw err
                                     else {
+                                        //send msg to the client part 
                                         responseHTTP.send({
                                             msg: "User Account created 😃 Please Verify your email 🚨 !",
                                             user: QR_INSERT
                                         })
+                                        //send email to the address 
+
                                     }
                                 }
                             )
