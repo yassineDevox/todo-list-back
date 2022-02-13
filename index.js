@@ -3,6 +3,9 @@ const cors = require("cors")
 const bp = require("body-parser")
 const mysql = require("mysql")
 const bcrypt = require("bcrypt")
+const randomString = require("randomstring")
+const nodeMailer = require("nodemailer")
+const { MAILGUN } = require("./tokens/mail-gun")
 const app = express()
 
 //body could have diff types 
@@ -126,12 +129,43 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
                                 (err, QR_INSERT) => {
                                     if (err) throw err
                                     else {
-                                        //send msg to the client part 
-                                        responseHTTP.send({
-                                            msg: "User Account created 😃 Please Verify your email 🚨 !",
-                                            user: QR_INSERT
-                                        })
+
                                         //send email to the address 
+                                        //generate token unique one 
+                                        newUser.verify_token = randomString.generate()
+                                        //set the options for the mail we'll send to the user 
+                                        const mailOptions = {
+                                            from: "todoApp@GMC.com",
+                                            to: newUser.email,
+                                            subject: "Please Verify your email Account 😇 !!",
+                                            html: `<a href="http://localhost:9000/api/auth/verify-email/${newUser.email}/code/${newUser.verify_token}">Verify My Email</a>`
+                                        }
+
+                                        //send email using nodemailer
+                                        //configuer le transporteur 
+                                        const transport = nodeMailer.createTransport({
+                                            service: 'Mailgun',
+                                            auth: {
+                                                user: MAILGUN.username,
+                                                pass: MAILGUN.password
+                                            },
+                                            tls: {
+                                                rejectUnauthorized: false
+                                            }
+                                        })
+
+                                        transport.sendMail(mailOptions, (err, info) => {
+
+                                            if (err)
+                                                console.log(err)
+                                            else {
+                                                //send msg to the client to verify his email box
+                                                responseHTTP.send({
+                                                    msg: "User Account created 😃 Please Verify your email 🚨 !",
+                                                })
+                                            }   
+
+                                        })
 
                                     }
                                 }
