@@ -2,6 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const bp = require("body-parser")
 const mysql = require("mysql")
+const bcrypt = require("bcrypt")
 const app = express()
 
 //body could have diff types 
@@ -104,23 +105,36 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
             else {
                 //if user is already exist 
                 if (QR_SELECT.length > 0) {
-                    responseHTTP.statusCode=403
+                    responseHTTP.statusCode = 403
                     responseHTTP.send({ msg: " Account already exist 🚨 !!" })
                     return
                 }
 
                 else {
-                    //insert user
-                    db.query(`INSERT INTO users SET ?`, newUser,
-                        (err, QR_INSERT) => {
-                            if (err) throw err
-                            else {
-                                responseHTTP.send({
-                                    msg: "User Account created 😃 Please Verify your email 🚨 !",
-                                    user: QR_INSERT
-                                })
-                            }
+
+                    //crypt the password of the user using bycrypt
+                    bcrypt.hash(newUser.password, 10)
+                        .then((hashedPassword) => {
+                            
+                            // password crypted 
+                            newUser.password = hashedPassword
+
+                            //insert user
+                            db.query(`INSERT INTO users SET ?`, newUser,
+                                (err, QR_INSERT) => {
+                                    if (err) throw err
+                                    else {
+                                        responseHTTP.send({
+                                            msg: "User Account created 😃 Please Verify your email 🚨 !",
+                                            user: QR_INSERT
+                                        })
+                                    }
+                                }
+                            )
+
                         })
+
+
                 }
             }
         }
