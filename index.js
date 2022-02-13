@@ -20,17 +20,18 @@ const db = mysql.createConnection({
     database: 'todo_dabase'
 })
 
-//Connect
+//Connect to mysql 
 db.connect((err) => {
     if (err) throw err
     console.log("Mysql connected...")
 })
 
+//activer l'ecoute sur les requets http qui vont venir sur l'addresse http://localhost:9000
 app.listen('9000', () => {
     console.log('Server started on port 9000 😇');
 })
 
-//--------------ecouter les requetes http--------- 
+//--------------List Des Apis--------- 
 //create todo table
 app.get("/create-todo-table", (requestHTTP, responseHTTP) => {
 
