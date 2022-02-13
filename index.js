@@ -102,6 +102,7 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
         (err, QR_SELECT) => {
             if (err) throw err
             else {
+                //if user is already exist 
                 if (QR_SELECT.length > 0) {
                     responseHTTP.statusCode=403
                     responseHTTP.send({ msg: " Account already exist 🚨 !!" })
