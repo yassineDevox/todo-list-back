@@ -55,7 +55,7 @@ app.get("/create-todo-table", (requestHTTP, responseHTTP) => {
                     title VARCHAR(60) NOT NULL , 
                     description VARCHAR(225) NOT NULL , 
                     status ENUM('DONE','CANCELED','INPROGRESS','TODO') NOT NULL DEFAULT 'TODO' , 
-                    createAt DATETIME NOT NULL , 
+                    startAt DATETIME NOT NULL , 
                     doneAt DATETIME NOT NULL , 
                     userId int(11) NOT NULL,
                     PRIMARY KEY (id),
@@ -119,10 +119,14 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
 
                     //crypt the password of the user using bycrypt
                     bcrypt.hash(newUser.password, 10)
+
                         .then((hashedPassword) => {
 
                             // password crypted 
                             newUser.password = hashedPassword
+
+                            //generate token to verify email   
+                            newUser.verify_token = randomString.generate()
 
                             //insert user
                             db.query(`INSERT INTO users SET ?`, newUser,
@@ -131,8 +135,6 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
                                     else {
 
                                         //send email to the address 
-                                        //generate token unique one 
-                                        newUser.verify_token = randomString.generate()
                                         //set the options for the mail we'll send to the user 
                                         const mailOptions = {
                                             from: "todoApp@GMC.com",
@@ -163,7 +165,7 @@ app.post("/api/register", (requestHTTP, responseHTTP) => {
                                                 responseHTTP.send({
                                                     msg: "User Account created 😃 Please Verify your email 🚨 !",
                                                 })
-                                            }   
+                                            }
 
                                         })
 
