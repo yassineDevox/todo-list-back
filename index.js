@@ -1,7 +1,16 @@
 const express = require("express");
 const mysql = require("mysql");
+const bp = require("body-parser");
+const cors = require("cors");
 
 const app = express();
+
+//body could have diff types
+app.use(bp.urlencoded({ extended: true }));
+//looks at requests where the Content-Type: application/json (Header)
+app.use(bp.json());
+//appliquer le cors comme middle ware
+app.use(cors());
 
 app.listen("9000", () => {
   console.log("Server started on port 9000 😇");
@@ -31,8 +40,8 @@ app.get("/api/creer-table-user", (requestHTTP, responseHTTP) => {
             role ENUM('DEV','LEADER','MANAGER') NOT NULL DEFAULT 'DEV' , 
             PRIMARY KEY (id), UNIQUE email (email) 
         ) `,
-    (errorDB,resultatQury) => {
-        if(errorDB) throw errorDB
+    (errorDB, resultatQuery) => {
+      if (errorDB) throw errorDB;
       //envoyer une reponse vers le client
       responseHTTP.send("user table created 😃 !");
     }
@@ -63,3 +72,49 @@ app.get("/api/creer-table-task", (requestHTTP, responseHTTP) => {
     }
   );
 });
+
+//register api
+app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
+  //fetch data from requesthttp
+  console.log(requestHTTP.body);
+  let data = requestHTTP.body;
+  //validation of the data
+  let error = false;
+  Object.keys(data).forEach((k) => {
+    if (data[k] === "") error = true;
+  });
+
+  if (error) {
+    responseHTTP.statusCode=403
+    responseHTTP.send({ msg: "Error Values are empty 😥 !" });
+  } else if (data.p !== data.rp){
+    responseHTTP.statusCode=403
+    responseHTTP.send({ msg:"Error Password should match the repeated Password 😥 !"});
+  }else{
+    //validation cote metier (email is already exist ? ) oui
+    responseHTTP.statusCode=403
+    responseHTTP.send({msg:"Email is already exist 😥"})
+  }
+  //validation cote metier (email is already exist ? ) oui
+  //--->send msg to the client
+  //validation cote metier (email is already exist ? ) non
+  //--> crypt password
+  //---> insert user to the database (user table)
+  //-----> send email to the user's address (url api verify email,expireDurration (24h),msg)
+  //-------> mssage cote client ( veuillez confirmer votre email )
+});
+
+//verify-email api
+app.get(
+  "/api/auth/verify-email/token/:token/email/:email",
+  (requestHTTP, responseHTTP) => {}
+);
+
+//login api
+app.post("/api/auth/login", (requestHTTP, responseHTTP) => {});
+
+//forget password api
+app.post("/api/auth/forget-password", (requestHTTP, responseHTTP) => {});
+
+//reset pasword api
+app.post("/api/auth/reset-password", (requestHTTP, responseHTTP) => {});
