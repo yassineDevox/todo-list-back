@@ -2,6 +2,7 @@ const express = require("express");
 const mysql = require("mysql");
 const bp = require("body-parser");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.get("/api/creer-table-user", (requestHTTP, responseHTTP) => {
             lastname VARCHAR(60) NOT NULL , 
             avatarURL VARCHAR(60) NOT NULL , 
             email VARCHAR(60) NOT NULL,
+            password VARCHAR(225) NOT NULL,
             role ENUM('DEV','LEADER','MANAGER') NOT NULL DEFAULT 'DEV' , 
             PRIMARY KEY (id), UNIQUE email (email) 
         ) `,
@@ -85,15 +87,58 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
   });
 
   if (error) {
-    responseHTTP.statusCode=403
+    responseHTTP.statusCode = 403;
     responseHTTP.send({ msg: "Error Values are empty 😥 !" });
-  } else if (data.p !== data.rp){
-    responseHTTP.statusCode=403
-    responseHTTP.send({ msg:"Error Password should match the repeated Password 😥 !"});
-  }else{
-    //validation cote metier (email is already exist ? ) oui
-    responseHTTP.statusCode=403
-    responseHTTP.send({msg:"Email is already exist 😥"})
+  } else if (data.password !== data.rPassword) {
+    responseHTTP.statusCode = 403;
+    responseHTTP.send({
+      msg: "Error Password should match the repeated Password 😥 !",
+    });
+  } else {
+    //est ce que lemail existe dans la base de donnee
+    db.query(
+      `SELECT id,firstname FROM USERS 
+      WHERE email='${data.email}'`,
+      (errorDB, resultatQuery) => {
+        if (errorDB) throw errorDB;
+        // console.log("resultat : ");
+        // console.log(resultatQuery);
+        if (resultatQuery.length > 0) {
+          responseHTTP.statusCode = 403;
+          responseHTTP.send({ msg: "Email is already exist 😥" });
+        } else {
+          //insertion du nouveau user
+
+          //crypt password
+          bcrypt.hash(data.password, 10, (err, hashedPassword) => {
+            if (err) console.log(err);
+            else {
+              data.password = hashedPassword;
+
+              //inserer le tout dans la base de donnee
+              db.query(
+                `INSERT INTO USERS (id, firstname, lastname, email, password, avatarURL,role)
+                 VALUES (null,
+                  '${data.firstname}',
+                  '${data.lastname}',
+                  '${data.email}',
+                  '${data.password}',
+                  '${data.avatarURL}',
+                  '${data.role}'
+                  )`,
+                (err, resultatQuery) => {
+                  if (err) throw err;
+                  console.log(resultatQuery);
+                  responseHTTP.statusCode = 201;
+
+                  responseHTTP.send({ msg: "user has been created ..." });
+                }
+              );
+            }
+          });
+        }
+      }
+    );
   }
   //validation cote metier (email is already exist ? ) oui
   //--->send msg to the client
@@ -106,7 +151,7 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
 
 //verify-email api
 app.get(
-  "/api/auth/verify-email/token/:token/email/:email",
+  "/api/auth/verify-email/:email/code/:token",
   (requestHTTP, responseHTTP) => {}
 );
 
