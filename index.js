@@ -144,44 +144,45 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
                     `UPDATE USERS
                       SET verify_token = '${emailToken}',
                        is_account_verified = '${isAccountVerified}'
-                       WHERE email='${data.email}'`
-                  ,(err,resultatQuery)=>{
-                    if(err) throw err
-                    //envoyer l'email vers la boite de lutilisateur
-                    let transporter = nodemailer.createTransport({
-                      host: "smtp.ethereal.email",
-                      port: 587,
-                      secure: false, // true for 465, false for other ports
-                      auth: {
-                        user: MAILGUN.username, // generated ethereal user
-                        pass: MAILGUN.password, // generated ethereal password
-                      },
-                    });
-                    //creer lobjet option 
-                    let mailOption = {
-                      from: 'todoList@gmc.ma', // sender address
-                      to: data.email, // list of receivers
-                      subject: "Merci de verifier la boite mail 😇", // Subject line
-                      html: `
+                       WHERE email='${data.email}'`,
+                    (err, resultatQuery) => {
+                      if (err) throw err;
+                      //envoyer l'email vers la boite de lutilisateur
+                      let transporter = nodemailer.createTransport({
+                        host: "smtp.ethereal.email",
+                        port: 587,
+                        secure: false, // true for 465, false for other ports
+                        auth: {
+                          user: MAILGUN.username, // generated ethereal user
+                          pass: MAILGUN.password, // generated ethereal password
+                        },
+                      });
+                      //creer lobjet option
+                      let mailOption = {
+                        from: "todoList@gmc.ma", // sender address
+                        to: data.email, // list of receivers
+                        subject: "Merci de verifier la boite mail 😇", // Subject line
+                        html: `
                             <a href=
                             "http://localhost:9000
                             /api/auth/verify-email/${data.email}/code/${data.token}">
                             Verify My Email 
                             </a>
                       `, // html body
+                      };
+                      //donner loption a sendmail pour faire laction
+                      transporter.sendMail(mailOption, (err, info) => {
+                        if (err) console.log(err);
+                        else {
+                          console.log(info);
+                          //envoyer un msg de verification vers la partie client
+                          responseHTTP.send({
+                            msg: "Please verify your email 😄",
+                          });
+                        }
+                      });
                     }
-                    //donner loption a sendmail pour faire laction
-                    transporter.sendMail(mailOption,(err,info)=>{
-                      if(err) console.log(err)
-                      else{
-                        console.log(info)
-                        //envoyer un msg de verification vers la partie client 
-                        responseHTTP.send({
-                          msg:"Please verify your email 😄"
-                        })
-                      }
-                    })
-                  });
+                  );
                 }
               );
             }
@@ -195,7 +196,50 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
 //verify-email api
 app.get(
   "/api/auth/verify-email/:email/code/:token",
-  (requestHTTP, responseHTTP) => {}
+  (requestHTTP, responseHTTP) => {
+    //recuperer l'email et token depuis lurl
+    let { email, token } = requestHTTP.params;
+    //query user by email and token
+    db.query(
+      `SELECT * FROM USERS 
+       WHERE email='${email}'
+       AND verify_token='${token}'
+       `,
+      (err, resultatQuery_1) => {
+        if (err) throw err;
+        else {
+          //invalid token case
+          if (resultatQuery_1.length === 0) {
+            responseHTTP.statusCode = 403;
+            responseHTTP.send({
+              msg: "invalid token 😈",
+            });
+          } else {
+            //query set isaccountverified to true
+            db.query(
+              `UPDATE USERS
+                SET 
+                 is_account_verified = true
+                 WHERE email='${email}'
+                 AND verify_token='${token}'`,
+              (err, resultatQuery_2) => {
+                if (err) throw err;
+                else {
+                  //envoyer un message html qui contient 
+                  //le lien vers la page login de frontend 
+                  responseHTTP.send(`
+                    <h1>Merci pour votre inscription 😇</h1>
+                    Bienvenu dear ${resultatQuery_1[0].firstname}
+                    <br/> <a href="http://localhost:3000/">Login</a>
+                  `)
+                }
+              }
+            );
+          }
+        }
+      }
+    );
+  }
 );
 
 //login api
