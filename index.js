@@ -3,6 +3,9 @@ const mysql = require("mysql");
 const bp = require("body-parser");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
+const randomstring = require("randomstring");
+const nodemailer = require("nodemailer");
+const { MAILGUN } = require("./tokens/mail-gun");
 
 const app = express();
 
@@ -39,6 +42,8 @@ app.get("/api/creer-table-user", (requestHTTP, responseHTTP) => {
             avatarURL VARCHAR(60) NOT NULL , 
             email VARCHAR(60) NOT NULL,
             password VARCHAR(225) NOT NULL,
+            verify_token VARCHAR(225) NOT NULL,
+            is_account_verified tinyint(1) NOT NULL,
             role ENUM('DEV','LEADER','MANAGER') NOT NULL DEFAULT 'DEV' , 
             PRIMARY KEY (id), UNIQUE email (email) 
         ) `,
@@ -128,10 +133,55 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
                   )`,
                 (err, resultatQuery) => {
                   if (err) throw err;
-                  console.log(resultatQuery);
-                  responseHTTP.statusCode = 201;
+                  //envoyer un email vers la boite mail de lutilisateur
+                  //generer le token
+                  let emailToken = randomstring.generate();
+                  //set is account verified to false
+                  let isAccountVerified = false;
 
-                  responseHTTP.send({ msg: "user has been created ..." });
+                  // update user's account
+                  db.query(
+                    `UPDATE USERS
+                      SET verify_token = '${emailToken}',
+                       is_account_verified = '${isAccountVerified}'
+                       WHERE email='${data.email}'`
+                  ,(err,resultatQuery)=>{
+                    if(err) throw err
+                    //envoyer l'email vers la boite de lutilisateur
+                    let transporter = nodemailer.createTransport({
+                      host: "smtp.ethereal.email",
+                      port: 587,
+                      secure: false, // true for 465, false for other ports
+                      auth: {
+                        user: MAILGUN.username, // generated ethereal user
+                        pass: MAILGUN.password, // generated ethereal password
+                      },
+                    });
+                    //creer lobjet option 
+                    let mailOption = {
+                      from: 'todoList@gmc.ma', // sender address
+                      to: data.email, // list of receivers
+                      subject: "Merci de verifier la boite mail 😇", // Subject line
+                      html: `
+                            <a href=
+                            "http://localhost:9000
+                            /api/auth/verify-email/${data.email}/code/${data.token}">
+                            Verify My Email 
+                            </a>
+                      `, // html body
+                    }
+                    //donner loption a sendmail pour faire laction
+                    transporter.sendMail(mailOption,(err,info)=>{
+                      if(err) console.log(err)
+                      else{
+                        console.log(info)
+                        //envoyer un msg de verification vers la partie client 
+                        responseHTTP.send({
+                          msg:"Please verify your email 😄"
+                        })
+                      }
+                    })
+                  });
                 }
               );
             }
@@ -140,13 +190,6 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
       }
     );
   }
-  //validation cote metier (email is already exist ? ) oui
-  //--->send msg to the client
-  //validation cote metier (email is already exist ? ) non
-  //--> crypt password
-  //---> insert user to the database (user table)
-  //-----> send email to the user's address (url api verify email,expireDurration (24h),msg)
-  //-------> mssage cote client ( veuillez confirmer votre email )
 });
 
 //verify-email api
