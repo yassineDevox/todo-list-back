@@ -225,13 +225,13 @@ app.get(
               (err, resultatQuery_2) => {
                 if (err) throw err;
                 else {
-                  //envoyer un message html qui contient 
-                  //le lien vers la page login de frontend 
+                  //envoyer un message html qui contient
+                  //le lien vers la page login de frontend
                   responseHTTP.send(`
                     <h1>Merci pour votre inscription 😇</h1>
                     Bienvenu dear ${resultatQuery_1[0].firstname}
                     <br/> <a href="http://localhost:3000/">Login</a>
-                  `)
+                  `);
                 }
               }
             );
@@ -243,10 +243,63 @@ app.get(
 );
 
 //login api
-app.post("/api/auth/login", (requestHTTP, responseHTTP) => {});
+app.post("/api/auth/login", (requestHTTP, responseHTTP) => {
+  //fetch data login
+  // console.log(requestHTTP.body)
+  const { email, password } = requestHTTP.body;
+  //validate data
+  if (!email || !password) {
+    responseHTTP.statusCode = 403;
+    responseHTTP.send({ msg: "error empty values server side 😞" });
+  }
+  //validation metier
+  db.query(
+    `SELECT * FROM USERS 
+     WHERE email='${email}'
+     `,
+    (err, resultatQuery) => {
+      if (err) throw err;
+      else {
+        //email not found case
+        if (resultatQuery.length === 0) {
+          responseHTTP.statusCode = 404;
+          responseHTTP.send({ msg: "email not found 😞" });
+        } else {
+          //compare password with hashedPassword
+          const hashedPassword = resultatQuery[0].password;
+          bcrypt.compare(password, hashedPassword, (err, res) => {
+            if (res === false) {
+              responseHTTP.statusCode = 403;
+              responseHTTP.send({ msg: "invalid password 😞" });
+            } else {
+              //is account verified true  
+              if(!resultatQuery[0].is_account_verified){
+                responseHTTP.statusCode = 403;
+                responseHTTP.send({ msg: "please verify your email address first 😅" });
+              }else { 
+                //send user info to the client 
+                responseHTTP.statusCode = 201;
+                let userInfos = {...resultatQuery[0]}
+                delete userInfos['password']
+                delete userInfos['verify_token']
+                delete userInfos['is_account_verified']
+                responseHTTP.send(
+                  {userInfos}
+                );
+              }
+
+            }
+          });
+        }
+      }
+    }
+  );
+});
 
 //forget password api
 app.post("/api/auth/forget-password", (requestHTTP, responseHTTP) => {});
 
 //reset pasword api
 app.post("/api/auth/reset-password", (requestHTTP, responseHTTP) => {});
+
+
