@@ -330,42 +330,57 @@ app.post("/api/auth/forget-password", (requestHTTP, responseHTTP) => {
               let forgetPassToken = randomstring.generate();
               let ResetPassFrontURL = `http://localhost:3000/resetPassword/code/${forgetPassToken}/email/${email}`;
               let expireDurration = 24;
-
-              //envoyer l'email vers la boite de lutilisateur
-              let transporter = nodemailer.createTransport({
-                host: "smtp.ethereal.email",
-                port: 587,
-                secure: false, // true for 465, false for other ports
-                auth: {
-                  user: MAILGUN.username, // generated ethereal user
-                  pass: MAILGUN.password, // generated ethereal password
-                },
-              });
-              //creer lobjet option
-              let mailOption = {
-                from: "todoList@gmc.ma", // sender address
-                to: email, // list of receivers
-                subject: "Reset Password 😇", // Subject line
-                html: `
-                    <a href="${ResetPassFrontURL}">
-                    Reset My Password
-                    </a>
-                    <p style="text-align-center">
-                    the link will be expire after ${expireDurration} hours
-                    </p>
-              `, // html body
-              };
-              //donner loption a sendmail pour faire laction
-              transporter.sendMail(mailOption, (err, info) => {
-                if (err) console.log(err);
-                else {
-                  console.log(info);
-                  //envoyer un msg de verification vers la partie client
-                  responseHTTP.send({
-                    msg: "please check your email dude 😄",
-                  });
+              let sendEmailAt = new Date(Date.now());
+              //concerver ca sur la base de donnee
+              db.query(
+                `UPDATE USERS
+                SET 
+                 verify_token = '${forgetPassToken}',
+                 expireDurration = ${expireDurration},
+                 sendEmailAt = '${sendEmailAt}'
+                 WHERE email='${email}'
+                 `,
+                (err, resultatQuery) => {
+                  if (err) throw err;
+                  else {
+                    //envoyer l'email vers la boite de lutilisateur
+                    let transporter = nodemailer.createTransport({
+                      host: "smtp.ethereal.email",
+                      port: 587,
+                      secure: false, // true for 465, false for other ports
+                      auth: {
+                        user: MAILGUN.username, // generated ethereal user
+                        pass: MAILGUN.password, // generated ethereal password
+                      },
+                    });
+                    //creer lobjet option
+                    let mailOption = {
+                      from: "todoList@gmc.ma", // sender address
+                      to: email, // list of receivers
+                      subject: "Reset Password 😇", // Subject line
+                      html: `
+                          <a href="${ResetPassFrontURL}">
+                          Reset My Password
+                          </a>
+                          <p style="text-align-center">
+                          the link will be expire after ${expireDurration} hours
+                          </p>
+                    `, // html body
+                    };
+                    //donner loption a sendmail pour faire laction
+                    transporter.sendMail(mailOption, (err, info) => {
+                      if (err) console.log(err);
+                      else {
+                        console.log(info);
+                        //envoyer un msg de verification vers la partie client
+                        responseHTTP.send({
+                          msg: "please check your email dude 😄",
+                        });
+                      }
+                    });
+                  }
                 }
-              });
+              );
             }
           }
         }
@@ -375,6 +390,64 @@ app.post("/api/auth/forget-password", (requestHTTP, responseHTTP) => {
 });
 
 //reset pasword api
-app.post("/api/auth/reset-password", (requestHTTP, responseHTTP) => {
-  
-});
+app.post(
+  "/api/auth/reset-password/code/:code/email/:email",
+  (requestHTTP, responseHTTP) => {
+    //fetch data
+    console.log(requestHTTP.body);
+    const { password, repeatedPassword } = requestHTTP.body;
+    //validation
+    if (!rp || !p) {
+      responseHTTP.statusCode = 403;
+      responseHTTP.send({ msg: "error empty values 😞" });
+    } else if (rp !== p) {
+      responseHTTP.statusCode = 403;
+      responseHTTP.send({ msg: "Passwords should be matched 😞" });
+    } else {
+      const { code, email } = requestHTTP.params;
+
+      db.query(
+        `SELECT * FROM USERS 
+       WHERE email='${email}'
+       AND verify_token='${code}'
+       `,
+        (err, resultatQuery) => {
+          if (err) throw err;
+          else {
+            //invalid token case
+            if (resultatQuery.length === 0) {
+              responseHTTP.statusCode = 403;
+              responseHTTP.send({
+                msg: "invalid token or email 😈",
+              });
+            } else {
+              //test if the token is expired
+              const dateNow = new Date(Date.now());
+              const expireDurration = resultatQuery[0].expireDurration;
+              const sendEmailAt = resultatQuery[0].sendEmailAt;
+              if (dateNow - sendEmailAt > expireDurration) {
+                responseHTTP.statusCode = 403;
+                responseHTTP.send({
+                  msg: "token has been expired 😈",
+                });
+              } else {
+                //crypt password
+                bcrypt.hash(password, 10, (err, hashedPassword) => {
+                  if (err) console.log(err);
+                  else {
+                    password = hashedPassword;
+                    db.query(`UPDATE USERS
+              SET 
+               password = '${password}',
+               verify_token=''
+               WHERE email='${email}'`);
+                  }
+                });
+              }
+            }
+          }
+        }
+      );
+    }
+  }
+);
