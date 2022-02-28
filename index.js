@@ -44,6 +44,8 @@ app.get("/api/creer-table-user", (requestHTTP, responseHTTP) => {
             password VARCHAR(225) NOT NULL,
             verify_token VARCHAR(225) NOT NULL,
             is_account_verified tinyint(1) NOT NULL,
+            expireDurration INT(2) NOT NULL,
+            sendEmailAt DATETIME() NOT NULL current_timestamp(),
             role ENUM('DEV','LEADER','MANAGER') NOT NULL DEFAULT 'DEV' , 
             PRIMARY KEY (id), UNIQUE email (email) 
         ) `,
@@ -272,22 +274,21 @@ app.post("/api/auth/login", (requestHTTP, responseHTTP) => {
               responseHTTP.statusCode = 403;
               responseHTTP.send({ msg: "invalid password 😞" });
             } else {
-              //is account verified true  
-              if(!resultatQuery[0].is_account_verified){
+              //is account verified true
+              if (!resultatQuery[0].is_account_verified) {
                 responseHTTP.statusCode = 403;
-                responseHTTP.send({ msg: "please verify your email address first 😅" });
-              }else { 
-                //send user info to the client 
+                responseHTTP.send({
+                  msg: "please verify your email address first 😅",
+                });
+              } else {
+                //send user info to the client
                 responseHTTP.statusCode = 201;
-                let userInfos = {...resultatQuery[0]}
-                delete userInfos['password']
-                delete userInfos['verify_token']
-                delete userInfos['is_account_verified']
-                responseHTTP.send(
-                  {userInfos}
-                );
+                let userInfos = { ...resultatQuery[0] };
+                delete userInfos["password"];
+                delete userInfos["verify_token"];
+                delete userInfos["is_account_verified"];
+                responseHTTP.send({ userInfos });
               }
-
             }
           });
         }
@@ -297,9 +298,83 @@ app.post("/api/auth/login", (requestHTTP, responseHTTP) => {
 });
 
 //forget password api
-app.post("/api/auth/forget-password", (requestHTTP, responseHTTP) => {});
+app.post("/api/auth/forget-password", (requestHTTP, responseHTTP) => {
+  //fetch data
+  console.log(requestHTTP.body);
+  const { email } = requestHTTP.body;
+  //validate email
+  if (!email) {
+    responseHTTP.statusCode = 403;
+    responseHTTP.send({ msg: "error empty values 😞" });
+  } else {
+    db.query(
+      `SELECT * FROM USERS 
+       WHERE email='${email}'
+       `,
+      (err, resultatQuery) => {
+        if (err) throw err;
+        else {
+          //email not found
+          if (resultatQuery.length === 0) {
+            responseHTTP.statusCode = 404;
+            responseHTTP.send({ msg: "email not found 😅" });
+          } else {
+            const isAccountVerified = resultatQuery[0].is_account_verified;
+            if (!isAccountVerified) {
+              responseHTTP.statusCode = 403;
+              responseHTTP.send({
+                msg: "please try to verify your email first 😅",
+              });
+            } else {
+              //send email
+              let forgetPassToken = randomstring.generate();
+              let ResetPassFrontURL = `http://localhost:3000/resetPassword/code/${forgetPassToken}/email/${email}`;
+              let expireDurration = 24;
+
+              //envoyer l'email vers la boite de lutilisateur
+              let transporter = nodemailer.createTransport({
+                host: "smtp.ethereal.email",
+                port: 587,
+                secure: false, // true for 465, false for other ports
+                auth: {
+                  user: MAILGUN.username, // generated ethereal user
+                  pass: MAILGUN.password, // generated ethereal password
+                },
+              });
+              //creer lobjet option
+              let mailOption = {
+                from: "todoList@gmc.ma", // sender address
+                to: email, // list of receivers
+                subject: "Reset Password 😇", // Subject line
+                html: `
+                    <a href="${ResetPassFrontURL}">
+                    Reset My Password
+                    </a>
+                    <p style="text-align-center">
+                    the link will be expire after ${expireDurration} hours
+                    </p>
+              `, // html body
+              };
+              //donner loption a sendmail pour faire laction
+              transporter.sendMail(mailOption, (err, info) => {
+                if (err) console.log(err);
+                else {
+                  console.log(info);
+                  //envoyer un msg de verification vers la partie client
+                  responseHTTP.send({
+                    msg: "please check your email dude 😄",
+                  });
+                }
+              });
+            }
+          }
+        }
+      }
+    );
+  }
+});
 
 //reset pasword api
-app.post("/api/auth/reset-password", (requestHTTP, responseHTTP) => {});
-
-
+app.post("/api/auth/reset-password", (requestHTTP, responseHTTP) => {
+  
+});
