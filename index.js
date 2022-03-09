@@ -29,6 +29,9 @@ const db = mysql.createConnection({
   database: "tododb",
 });
 
+db.connect(() => {
+  console.log("mysql server is runing ... 😎");
+});
 //lorsque lutilisateur invoke cet url
 app.get("/api/creer-table-user", (requestHTTP, responseHTTP) => {
   // console.log("create user table ...")
@@ -287,6 +290,8 @@ app.post("/api/auth/login", (requestHTTP, responseHTTP) => {
                 delete userInfos["password"];
                 delete userInfos["verify_token"];
                 delete userInfos["is_account_verified"];
+                delete userInfos["sendEmailAt"];
+                delete userInfos["expireDurration"];
                 responseHTTP.send({ userInfos });
               }
             }
@@ -451,3 +456,66 @@ app.post(
     }
   }
 );
+
+//___________________todo api___________
+
+app.post("/api/todos", (requestHTTP, responseHTTP) => {
+  //fetch data
+  console.log(requestHTTP.body);
+  const newTask = requestHTTP.body;
+  //validation des donees
+
+  //validation des donnee
+  if (!newTask.title || !newTask.description || !newTask.status) {
+    responseHTTP.statusCode = 403;
+    responseHTTP.send({ msg: "Empty values error 😈 !" });
+  } else if (
+    newTask.status !== "DONE" &&
+    newTask.status !== "CANCELED" &&
+    newTask.status !== "INPROGRESS" &&
+    newTask.status !== "TODO"
+  ) {
+    responseHTTP.statusCode = 403;
+    responseHTTP.send({ msg: "Invalid status task value 😈 !" });
+  } else {
+    //is userId exist ?
+    db.query(
+      `SELECT * FROM USERS WHERE id=${newTask.userId}
+        `,
+      (err, resultatQuery) => {
+        if (err){ 
+          responseHTTP.statusCode=500
+          responseHTTP.send({msg:"error database 🚨 !"});
+          throw err
+        }
+        else {
+          if (resultatQuery.length === 0) {
+            responseHTTP.statusCode = 404;
+            responseHTTP.send({ msg: "UserId not found 😈 !" });
+          }else {
+            db.query(
+              `INSERT INTO TASKS (id, title, description, status,startedAt,doneAt,userId)
+                 VALUES (null,
+                  '${newTask.title}',
+                  '${newTask.description}',
+                  '${newTask.status}',
+                  CURRENT_TIMESTAMP,
+                  CURRENT_TIMESTAMP,
+                  ${newTask.userId}
+                  )`,
+                  (err,resultatQuery_1)=>{
+                    if(err) throw err 
+                    else {
+                      responseHTTP.statusCode=201
+                      responseHTTP.send({msg:"todo added successfully 😇"})
+
+                    }
+                  }
+
+            )
+          }
+        }
+      }
+    );
+    }
+});
