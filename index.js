@@ -483,16 +483,15 @@ app.post("/api/todos", (requestHTTP, responseHTTP) => {
       `SELECT * FROM USERS WHERE id=${newTask.userId}
         `,
       (err, resultatQuery) => {
-        if (err){ 
-          responseHTTP.statusCode=500
-          responseHTTP.send({msg:"error database 🚨 !"});
-          throw err
-        }
-        else {
+        if (err) {
+          responseHTTP.statusCode = 500;
+          responseHTTP.send({ msg: "error database 🚨 !" });
+          throw err;
+        } else {
           if (resultatQuery.length === 0) {
             responseHTTP.statusCode = 404;
             responseHTTP.send({ msg: "UserId not found 😈 !" });
-          }else {
+          } else {
             db.query(
               `INSERT INTO TASKS (id, title, description, status,startedAt,doneAt,userId)
                  VALUES (null,
@@ -503,19 +502,35 @@ app.post("/api/todos", (requestHTTP, responseHTTP) => {
                   CURRENT_TIMESTAMP,
                   ${newTask.userId}
                   )`,
-                  (err,resultatQuery_1)=>{
-                    if(err) throw err 
-                    else {
-                      responseHTTP.statusCode=201
-                      responseHTTP.send({msg:"todo added successfully 😇"})
-
-                    }
-                  }
-
-            )
+              (err, resultatQuery_1) => {
+                if (err) throw err;
+                else {
+                  responseHTTP.statusCode = 201;
+                  responseHTTP.send({ msg: "todo added successfully 😇" });
+                }
+              }
+            );
           }
         }
       }
     );
+  }
+});
+// /api/users/4/todos
+app.get("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
+  //fetch data userId
+  const userID = requestHTTP.params.userId;
+  //get all todos of userId
+  db.query(
+    `SELECT * FROM TASKS WHERE userId=${userID}`,
+    (err, resultatQuery) => {
+      if (err) throw err;
+      else {
+        responseHTTP.statusCode=200
+        responseHTTP.send({tasks:resultatQuery})
+      }
     }
+  );
+
+  // console.log(userID)
 });
