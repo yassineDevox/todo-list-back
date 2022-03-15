@@ -550,9 +550,37 @@ app.delete("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
         console.log(resultatQuery);
         responseHTTP.statusCode = 200;
         responseHTTP.send({
-          msg: "task deleted successfully 😢 !",
+          msg: "task deleted successfully 😎 !",
         });
       }, 1000);
     }
   });
+});
+
+// update task api
+app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
+  //fetch data from url using params
+  console.log(requestHTTP.params,requestHTTP.body);
+  const { todoId } = requestHTTP.params;
+  const { updatedTask } = requestHTTP.body;
+  //update task from tasks table
+  db.query(
+    `UPDATE TASKS 
+    SET title='${updatedTask.title}',
+    description='${updatedTask.description}',
+    status = '${updatedTask.status}'
+    WHERE id=${todoId}`,
+    (err, resultatQuery) => {
+      if (err) throw err;
+      else {
+        setTimeout(() => {
+          console.log(resultatQuery);
+          responseHTTP.statusCode = 201;
+          responseHTTP.send({
+            msg: "task updated successfully 😎 !",
+          });
+        }, 1000);
+      }
+    }
+  );
 });
