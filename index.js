@@ -166,7 +166,7 @@ app.post("/api/auth/register", (requestHTTP, responseHTTP) => {
                       let mailOption = {
                         from: "todoList@gmc.ma", // sender address
                         to: data.email, // list of receivers
-                        subject: "Merci de verifier la boite mail 😇", // Subject line
+                        subject: "Merci de confirmer votre inscripition 😇", // Subject line
                         html: `
                             <a href=
                             "http://localhost:9000
@@ -216,11 +216,9 @@ app.get(
           //invalid token case
           if (resultatQuery_1.length === 0) {
             responseHTTP.statusCode = 403;
-            responseHTTP.send({
-              msg: "invalid token 😈",
-            });
+            responseHTTP.send("invalid token 😈");
           } else {
-            //query set isaccountverified to true
+            //query set is accountverified to true
             db.query(
               `UPDATE USERS
                 SET 
@@ -442,10 +440,10 @@ app.post(
                   else {
                     password = hashedPassword;
                     db.query(`UPDATE USERS
-              SET 
-               password = '${password}',
-               verify_token=''
-               WHERE email='${email}'`);
+                                SET 
+                                password = '${password}',
+                                verify_token=''
+                                WHERE email='${email}'`);
                   }
                 });
               }
@@ -526,11 +524,38 @@ app.get("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
     (err, resultatQuery) => {
       if (err) throw err;
       else {
-        responseHTTP.statusCode=200
-        responseHTTP.send({tasks:resultatQuery})
+        responseHTTP.statusCode = 200;
+        responseHTTP.send({ tasks: resultatQuery });
       }
     }
   );
 
   // console.log(userID)
 });
+
+// delete task api
+app.delete(
+  "/api/users/:userId/todos/:todoId",
+  (requestHTTP, responseHTTP) => {
+
+    //fetch data from url using params 
+    // console.log(requestHTTP.params);
+    const {todoId} =  requestHTTP.params
+    //delete task from tasks table 
+    db.query(`DELETE FROM tasks WHERE id=${todoId}`,
+    (err,resultatQuery)=>{
+      if(err) throw err
+      else {
+        setTimeout(()=>{
+          console.log(resultatQuery)
+          responseHTTP.statusCode = 200
+          responseHTTP.send({
+            msg:"task deleted successfully 😢 !"
+          })
+        },5000)
+      }
+    }) 
+
+
+  }
+);
