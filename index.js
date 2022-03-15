@@ -503,8 +503,12 @@ app.post("/api/todos", (requestHTTP, responseHTTP) => {
               (err, resultatQuery_1) => {
                 if (err) throw err;
                 else {
+                  console.log(resultatQuery_1);
                   responseHTTP.statusCode = 201;
-                  responseHTTP.send({ msg: "todo added successfully 😇" });
+                  responseHTTP.send({
+                    msg: "todo added successfully 😇",
+                    todoId: resultatQuery_1.insertId,
+                  });
                 }
               }
             );
@@ -534,28 +538,21 @@ app.get("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
 });
 
 // delete task api
-app.delete(
-  "/api/users/:userId/todos/:todoId",
-  (requestHTTP, responseHTTP) => {
-
-    //fetch data from url using params 
-    // console.log(requestHTTP.params);
-    const {todoId} =  requestHTTP.params
-    //delete task from tasks table 
-    db.query(`DELETE FROM tasks WHERE id=${todoId}`,
-    (err,resultatQuery)=>{
-      if(err) throw err
-      else {
-        setTimeout(()=>{
-          console.log(resultatQuery)
-          responseHTTP.statusCode = 200
-          responseHTTP.send({
-            msg:"task deleted successfully 😢 !"
-          })
-        },5000)
-      }
-    }) 
-
-
-  }
-);
+app.delete("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
+  //fetch data from url using params
+  // console.log(requestHTTP.params);
+  const { todoId } = requestHTTP.params;
+  //delete task from tasks table
+  db.query(`DELETE FROM tasks WHERE id=${todoId}`, (err, resultatQuery) => {
+    if (err) throw err;
+    else {
+      setTimeout(() => {
+        console.log(resultatQuery);
+        responseHTTP.statusCode = 200;
+        responseHTTP.send({
+          msg: "task deleted successfully 😢 !",
+        });
+      }, 1000);
+    }
+  });
+});
