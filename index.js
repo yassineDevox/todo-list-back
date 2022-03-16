@@ -560,16 +560,28 @@ app.delete("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
 // update task api
 app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
   //fetch data from url using params
-  console.log(requestHTTP.params,requestHTTP.body);
+  console.log(requestHTTP.params, requestHTTP.body);
   const { todoId } = requestHTTP.params;
   const { updatedTask } = requestHTTP.body;
   //update task from tasks table
-  db.query(
-    `UPDATE TASKS 
-    SET title='${updatedTask.title}',
-    description='${updatedTask.description}',
-    status = '${updatedTask.status}'
-    WHERE id=${todoId}`,
+
+  let sql = `UPDATE tasks 
+  SET title='${updatedTask.title}',
+  description='${updatedTask.description}',
+  status = '${updatedTask.status}'
+   `;
+  switch (updatedTask.status) {
+    case "INPROGRESS":
+      sql += `, startedAt = CURRENT_TIMESTAMP`;
+      break;
+    case "DONE":
+      sql += `, doneAt = CURRENT_TIMESTAMP`;
+      break;
+  }
+  sql+=` WHERE id=${todoId}`
+  sql = sql.replace("\n","")
+  console.log(sql)
+  db.query(sql,
     (err, resultatQuery) => {
       if (err) throw err;
       else {
