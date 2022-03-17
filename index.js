@@ -457,7 +457,7 @@ app.post(
 
 //___________________todo api___________
 
-app.post("/api/todos", (requestHTTP, responseHTTP) => {
+app.post("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
   //fetch data
   console.log(requestHTTP.body);
   const newTask = requestHTTP.body;
