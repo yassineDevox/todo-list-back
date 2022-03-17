@@ -578,21 +578,50 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
       sql += `, doneAt = CURRENT_TIMESTAMP`;
       break;
   }
-  sql+=` WHERE id=${todoId}`
-  sql = sql.replace("\n","")
-  console.log(sql)
-  db.query(sql,
-    (err, resultatQuery) => {
-      if (err) throw err;
-      else {
-        setTimeout(() => {
-          console.log(resultatQuery);
-          responseHTTP.statusCode = 201;
-          responseHTTP.send({
-            msg: "task updated successfully 😎 !",
-          });
-        }, 1000);
-      }
+  sql += ` WHERE id=${todoId}`;
+  sql = sql.replace("\n", "");
+
+  db.query(sql, (err, resultatQuery) => {
+    if (err) throw err;
+    else {
+      db.query(
+        `SELECT startedAt, doneAt FROM TASKS WHERE id=${todoId}`,
+        (err, resultatQuery1) => {
+          if (err) throw err;
+          else {
+            setTimeout(() => {
+              console.log(resultatQuery1);
+              responseHTTP.statusCode = 201;
+              responseHTTP.send({
+                msg: "task updated successfully 😎 !",
+                startedAt : resultatQuery1[0].startedAt,
+                doneAt : resultatQuery1[0].doneAt
+              });
+            }, 1000);
+          }
+        }
+      );
     }
-  );
+  });
 });
+
+//get todo details 
+app.get("/api/todos/:todoId",(requestHTTP,responseHTTP)=>{
+
+  //fetch data 
+  const {todoId} = requestHTTP.params
+  //get task details 
+  db.query(
+    `SELECT * FROM TASKS WHERE id=${todoId}`
+    ,(err,rq)=>{
+      if(err) throw err 
+      else {
+        setTimeout(()=>{
+          responseHTTP.statusCode = 200
+          responseHTTP.send({
+            todo : rq[0]
+          })
+        },1000)
+      }
+    })
+})
