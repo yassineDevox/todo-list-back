@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/yassineDevox/todo-list-back/issues"
   },
-  "homepage": "https://github.com/yassineDevox/todo-list-back#readme"
+  "homepage": "https://github.com/yassineDevox/todo-list-back#readme",
+  "engines": {
+    "node": "16.x"
+  }
 }
