@@ -528,8 +528,10 @@ app.get("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
     (err, resultatQuery) => {
       if (err) throw err;
       else {
+        setTimeout(() => {
         responseHTTP.statusCode = 200;
         responseHTTP.send({ tasks: resultatQuery });
+        },2000)
       }
     }
   );
