@@ -507,7 +507,9 @@ app.post("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
                   responseHTTP.statusCode = 201;
                   responseHTTP.send({
                     msg: "todo added successfully 😇",
-                    todoId: resultatQuery_1.insertId,
+                    todo: {
+                      ...newTask,id:resultatQuery_1.insertId
+                    },
                   });
                 }
               }
@@ -529,9 +531,9 @@ app.get("/api/users/:userId/todos", (requestHTTP, responseHTTP) => {
       if (err) throw err;
       else {
         setTimeout(() => {
-        responseHTTP.statusCode = 200;
-        responseHTTP.send({ tasks: resultatQuery });
-        },2000)
+          responseHTTP.statusCode = 200;
+          responseHTTP.send({ tasks: resultatQuery });
+        }, 2000);
       }
     }
   );
@@ -564,15 +566,15 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
   //fetch data from url using params
   console.log(requestHTTP.params, requestHTTP.body);
   const { todoId } = requestHTTP.params;
-  const { updatedTask } = requestHTTP.body;
+  const { title, description, status } = requestHTTP.body;
   //update task from tasks table
 
   let sql = `UPDATE tasks 
-  SET title='${updatedTask.title}',
-  description='${updatedTask.description}',
-  status = '${updatedTask.status}'
+  SET title='${title}',
+  description='${description}',
+  status = '${status}'
    `;
-  switch (updatedTask.status) {
+  switch (status) {
     case "INPROGRESS":
       sql += `, startedAt = CURRENT_TIMESTAMP`;
       break;
@@ -596,8 +598,13 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
               responseHTTP.statusCode = 201;
               responseHTTP.send({
                 msg: "task updated successfully 😎 !",
-                startedAt : resultatQuery1[0].startedAt,
-                doneAt : resultatQuery1[0].doneAt
+                todo : {
+                  title,
+                  description,
+                  status,
+                  startedAt: resultatQuery1[0].startedAt,
+                  doneAt: resultatQuery1[0].doneAt,
+                },
               });
             }, 1000);
           }
@@ -607,23 +614,21 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
   });
 });
 
-//get todo details 
-app.get("/api/todos/:todoId",(requestHTTP,responseHTTP)=>{
-
-  //fetch data 
-  const {todoId} = requestHTTP.params
-  //get task details 
-  db.query(
-    `SELECT * FROM TASKS WHERE id=${todoId}`
-    ,(err,rq)=>{
-      if(err) throw err 
-      else {
-        setTimeout(()=>{
-          responseHTTP.statusCode = 200
-          responseHTTP.send({
-            todo : rq[0]
-          })
-        },1000)
-      }
-    })
-})
+//get todo details
+app.get("/api/todos/:todoId", (requestHTTP, responseHTTP) => {
+  //fetch data
+  const { todoId } = requestHTTP.params;
+  //get task details
+  db.query(`SELECT * FROM TASKS WHERE id=${todoId}`, (err, rq) => {
+    if (err) throw err;
+    else {
+      console.log(rq[0]);
+      setTimeout(() => {
+        responseHTTP.statusCode = 200;
+        responseHTTP.send({
+          todo: rq[0],
+        });
+      }, 1000);
+    }
+  });
+});
