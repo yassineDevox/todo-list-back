@@ -599,6 +599,7 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
               responseHTTP.send({
                 msg: "task updated successfully 😎 !",
                 todo : {
+                  id:Number(todoId),
                   title,
                   description,
                   status,
@@ -606,7 +607,7 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
                   doneAt: resultatQuery1[0].doneAt,
                 },
               });
-            }, 3000);
+            }, 1000);
           }
         }
       );
