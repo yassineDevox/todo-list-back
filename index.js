@@ -606,7 +606,7 @@ app.put("/api/users/:userId/todos/:todoId", (requestHTTP, responseHTTP) => {
                   doneAt: resultatQuery1[0].doneAt,
                 },
               });
-            }, 1000);
+            }, 3000);
           }
         }
       );
